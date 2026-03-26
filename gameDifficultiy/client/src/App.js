@@ -19,11 +19,19 @@ function App() {
   };
 
   const [user, setUser] = useState(getInitialUser);
-  const [currentView, setCurrentView] = useState(getInitialView);
+  const [currentView, setCurrentView] = useState(() => {
+    const view = getInitialView();
+    document.body.style.overflow = view === 'game' ? 'hidden' : '';
+    document.body.style.height = view === 'game' ? '100%' : '';
+    return view;
+  });
 
   const navigateTo = (view) => {
     sessionStorage.setItem('currentView', view);
     setCurrentView(view);
+    // Lock body scroll only during game
+    document.body.style.overflow = view === 'game' ? 'hidden' : '';
+    document.body.style.height = view === 'game' ? '100%' : '';
   };
 
   const handleLogin = (userData) => {
@@ -58,7 +66,7 @@ function App() {
 
   const renderMainView = () => {
     return (
-      <div style={{ minHeight: '100vh' }}>
+      <div style={{ minHeight: currentView === 'game' ? '100vh' : 'auto', overflow: currentView === 'game' ? 'hidden' : 'auto' }}>
         {/* Navigation Bar */}
         {currentView !== 'game' && (
           <nav style={{
