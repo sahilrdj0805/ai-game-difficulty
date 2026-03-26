@@ -86,35 +86,28 @@ export default function Game({ onNavigate }) {
   };
 
   const playBgMusic = () => {
-    if (!audioCtx.current) return;
-    const melody = [
-      [659,.15],[659,.15],[784,.15],[880,.15],[784,.15],[659,.15],[523,.3],
-      [587,.15],[587,.15],[659,.15],[784,.15],[659,.15],[587,.15],[523,.3],
-      [659,.15],[784,.15],[880,.15],[988,.3],[880,.15],[784,.15],[659,.3],
-    ];
-    const loop = () => {
-      let t = audioCtx.current.currentTime;
-      melody.forEach(([f, d]) => {
-        const o = audioCtx.current.createOscillator();
-        const g = audioCtx.current.createGain();
-        o.connect(g); g.connect(audioCtx.current.destination);
-        o.frequency.value = f; o.type = 'sawtooth';
-        g.gain.setValueAtTime(0.05, t);
-        g.gain.exponentialRampToValueAtTime(0.01, t + d);
-        o.start(t); o.stop(t + d); t += d;
-      });
-    };
-    loop();
-    bgMusicRef.current = setInterval(loop, 3200);
+    if (bgMusicRef.current) return;
+    const audio = new Audio('/bg-music.mp3');
+    audio.loop = true;
+    audio.volume = 0.4;
+    audio.play().catch(() => {});
+    bgMusicRef.current = audio;
   };
 
   const stopBgMusic = () => {
-    clearInterval(bgMusicRef.current);
-    bgMusicRef.current = null;
+    if (bgMusicRef.current) {
+      bgMusicRef.current.pause();
+      bgMusicRef.current.currentTime = 0;
+      bgMusicRef.current = null;
+    }
   };
+
+  const pauseBgMusic = () => { if (bgMusicRef.current) bgMusicRef.current.pause(); };
+  const resumeBgMusic = () => { if (bgMusicRef.current) bgMusicRef.current.play().catch(() => {}); };
 
   useEffect(() => {
     if (gs.isPlaying && !gs.isPaused) playBgMusic();
+    else if (gs.isPlaying && gs.isPaused) pauseBgMusic();
     else stopBgMusic();
     return stopBgMusic;
   }, [gs.isPlaying, gs.isPaused]);
@@ -512,24 +505,60 @@ export default function Game({ onNavigate }) {
     setMessage('⏹️ Game stopped!');
   };
 
+  // ── Mobile button handlers ─────────────────────────────────────────────────
+  const moveLeft = () => {
+    const cur = gsRef.current;
+    if (!cur.isPlaying || cur.isPaused || cur.playerPosition <= 0) return;
+    const now = Date.now();
+    const rt = now - cur.lastMoveTime;
+    reactionHistory.current = [...reactionHistory.current.slice(-9), rt];
+    behaviorLog.current.lanes.push(cur.playerPosition - 1);
+    behaviorLog.current.moveCount++;
+    setGs(p => ({ ...p, playerPosition: p.playerPosition - 1, reactionTime: rt, lastMoveTime: now }));
+    playSound(200, 0.1);
+  };
+  const moveRight = () => {
+    const cur = gsRef.current;
+    if (!cur.isPlaying || cur.isPaused || cur.playerPosition >= 2) return;
+    const now = Date.now();
+    const rt = now - cur.lastMoveTime;
+    reactionHistory.current = [...reactionHistory.current.slice(-9), rt];
+    behaviorLog.current.lanes.push(cur.playerPosition + 1);
+    behaviorLog.current.moveCount++;
+    setGs(p => ({ ...p, playerPosition: p.playerPosition + 1, reactionTime: rt, lastMoveTime: now }));
+    playSound(200, 0.1);
+  };
+  const doJump = () => {
+    const cur = gsRef.current;
+    if (!cur.isPlaying || cur.isPaused || cur.isJumping || cur.jumpHeight > 0) return;
+    behaviorLog.current.jumps++;
+    setGs(p => ({ ...p, isJumping: true, jumpVelocity: p.jumpPower, jumpHeight: 1 }));
+    playSound(350, 0.15, 'square');
+  };
+
   // ── Swipe controls (mobile) ────────────────────────────────────────────────
   const touchStart = useRef(null);
-  const onTouchStart = (e) => { touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }; };
+  const onTouchStart = (e) => {
+    e.preventDefault();
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
   const onTouchEnd = (e) => {
+    e.preventDefault();
     if (!touchStart.current || !gsRef.current.isPlaying || gsRef.current.isPaused) return;
     const dx = e.changedTouches[0].clientX - touchStart.current.x;
     const dy = e.changedTouches[0].clientY - touchStart.current.y;
     if (Math.abs(dx) > Math.abs(dy)) {
-      if (dx < -30 && gsRef.current.playerPosition > 0) setGs(p => ({ ...p, playerPosition: p.playerPosition - 1 }));
-      if (dx > 30 && gsRef.current.playerPosition < 2) setGs(p => ({ ...p, playerPosition: p.playerPosition + 1 }));
-    } else if (dy < -30 && !gsRef.current.isJumping) {
-      setGs(p => ({ ...p, isJumping: true, jumpVelocity: p.jumpPower, jumpHeight: 1 }));
+      if (dx < -30) moveLeft();
+      if (dx > 30) moveRight();
+    } else if (dy < -30) {
+      doJump();
     }
     touchStart.current = null;
   };
 
   return (
-    <div style={{ width:'100vw', height:'100vh', background:'#0a0a1a', position:'relative', overflow:'hidden', fontFamily:'Arial, sans-serif',
+    <div style={{ width:'100vw', height:'100vh', background:'#0a0a1a', position:'fixed', top:0, left:0, overflow:'hidden', fontFamily:'Arial, sans-serif',
+      userSelect:'none',
       animation: shake ? 'screenShake 0.35s ease-out' : 'none' }}
       onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
 
