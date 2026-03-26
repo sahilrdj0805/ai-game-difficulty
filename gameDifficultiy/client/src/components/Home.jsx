@@ -107,7 +107,7 @@ export default function Home({ user, onNavigate }) {
     }}>
 
       {/* Ambient blobs */}
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 0 }}>
         <div style={{
           position: 'absolute', top: '-20%', left: '-10%',
           width: '60vw', height: '60vw', borderRadius: '50%',
@@ -133,7 +133,7 @@ export default function Home({ user, onNavigate }) {
         <Particles
           id="tsparticles"
           options={particleOptions}
-          style={{ position: 'fixed', inset: 0, zIndex: 1 }}
+          style={{ position: 'absolute', inset: 0, zIndex: 1 }}
         />
       )}
       {!init && (
@@ -141,13 +141,13 @@ export default function Home({ user, onNavigate }) {
           id="tsparticles"
           init={particlesInit}
           options={particleOptions}
-          style={{ position: 'fixed', inset: 0, zIndex: 1 }}
+          style={{ position: 'absolute', inset: 0, zIndex: 1 }}
         />
       )}
 
       {/* Scanline overlay */}
       <div style={{
-        position: 'fixed', inset: 0, zIndex: 2, pointerEvents: 'none',
+        position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none',
         backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)',
       }} />
 
