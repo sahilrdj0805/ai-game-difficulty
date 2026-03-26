@@ -1,0 +1,11 @@
+{
+  "extends": [
+    "react-app",
+    "react-app/jest"
+  ],
+  "rules": {
+    "react-hooks/exhaustive-deps": "warn",
+    "default-case": "warn",
+    "no-dupe-keys": "error"
+  }
+}
