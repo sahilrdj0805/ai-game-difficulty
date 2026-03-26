@@ -478,7 +478,11 @@ export default function Game({ onNavigate }) {
   };
 
   // ── Start / Stop ───────────────────────────────────────────────────────────
-  const startGame = () => {
+  const startGame = async () => {
+    // Resume AudioContext on user gesture (required on mobile)
+    if (audioCtx.current && audioCtx.current.state === 'suspended') {
+      await audioCtx.current.resume();
+    }
     setLastRun(null);
     let cd = 3;
     setMessage(`🚀 Starting in ${cd}...`);
@@ -539,11 +543,12 @@ export default function Game({ onNavigate }) {
   // ── Swipe controls (mobile) ────────────────────────────────────────────────
   const touchStart = useRef(null);
   const onTouchStart = (e) => {
-    e.preventDefault();
     touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   };
-  const onTouchEnd = (e) => {
+  const onTouchMove = (e) => {
     e.preventDefault();
+  };
+  const onTouchEnd = (e) => {
     if (!touchStart.current || !gsRef.current.isPlaying || gsRef.current.isPaused) return;
     const dx = e.changedTouches[0].clientX - touchStart.current.x;
     const dy = e.changedTouches[0].clientY - touchStart.current.y;
@@ -556,8 +561,17 @@ export default function Game({ onNavigate }) {
     touchStart.current = null;
   };
 
+  const gameContainerRef = useRef(null);
+  useEffect(() => {
+    const el = gameContainerRef.current;
+    if (!el) return;
+    const handleTouchMove = (e) => e.preventDefault();
+    el.addEventListener('touchmove', handleTouchMove, { passive: false });
+    return () => el.removeEventListener('touchmove', handleTouchMove);
+  }, []);
+
   return (
-    <div style={{ width:'100vw', height:'100vh', background:'#0a0a1a', position:'fixed', top:0, left:0, overflow:'hidden', fontFamily:'Arial, sans-serif',
+    <div ref={gameContainerRef} style={{ width:'100vw', height:'100vh', background:'#0a0a1a', position:'fixed', top:0, left:0, overflow:'hidden', fontFamily:'Arial, sans-serif',
       userSelect:'none',
       animation: shake ? 'screenShake 0.35s ease-out' : 'none' }}
       onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>

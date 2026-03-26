@@ -9,6 +9,11 @@ node_modules/
 # Build output
 client/build/
 
+# Media files (large)
+client/public/*.mp3
+client/public/*.mp4
+client/public/*.wav
+
 # Logs
 *.log
 npm-debug.log*
